@@ -1,12 +1,12 @@
 #include "WorkWithFiles.hpp"
 
+#include <sstream>
+
 WorkWithFiles::WorkWithFiles(const std::string file_name, std::vector<Animals*>& vect)
 	: file_name_{ file_name }
 {
 	ReadFromFile();
 	vect = tmp_vect_;
-	//tmp_vect_ = vect;
-	//std::copy(tmp_vect_.begin(), tmp_vect_.end(), vect);
 }
 
 WorkWithFiles::~WorkWithFiles() {
@@ -18,99 +18,86 @@ WorkWithFiles::~WorkWithFiles() {
 	}
 }
 
-std::string WorkWithFiles::ReadInfo(std::fstream& obj) {
-	std::vector<char> buf_;
-	std::size_t size_{};
-	obj.read(reinterpret_cast<char*>(&size_), sizeof(size_t));
-	buf_.resize(size_ + 1);
-	obj.read(buf_.data(), size_);
-	buf_[size_] = '\0';
+Animals* WorkWithFiles::ParsingCSV_String(const std::string& pars_str) {
+	std::size_t tmp_id{};
+	std::string tmp_name;
+	Animals::TypeFood tmp_type_food{ Animals::TypeFood::None };
+	std::size_t tmp_amount_food{};
 
-	return buf_.data();
+	std::istringstream buffer{ pars_str };
+	std::string buffer_str;
+
+	std::getline(buffer, buffer_str, ';');
+	tmp_id = static_cast<std::size_t>(std::stoi(buffer_str));
+
+	std::getline(buffer, buffer_str, ';');
+	tmp_name = buffer_str;
+
+	std::getline(buffer, buffer_str, ';');
+	if (buffer_str == "Predators") {
+		tmp_type_food = Animals::TypeFood::Meat;
+	}
+	else if (buffer_str == "Herbivorous") {
+		tmp_type_food = Animals::TypeFood::Grass;
+	}
+	else if (buffer_str == "Omnivorous") {
+		tmp_type_food = Animals::TypeFood::All;
+	}
+	else {
+		throw std::exception("Error! Incorect Data!");
+	}
+
+	std::getline(buffer, buffer_str, ';');
+	tmp_amount_food = static_cast<std::size_t>(std::stoi(buffer_str));
+
+	Animals* tmp{};
+
+	switch (tmp_type_food) {
+	case Animals::TypeFood::Meat:
+		tmp = new Predators{ tmp_name, tmp_amount_food };
+		break;
+	case Animals::TypeFood::Grass:
+		tmp = new Herbivorous{ tmp_name, tmp_amount_food };
+		break;
+	case Animals::TypeFood::All:
+		tmp = new Omnivorous{ tmp_name, tmp_amount_food };
+		break;
+	default:
+		break;
+	}
+	tmp->setID(tmp_id);
+
+	return tmp;
 }
 
 void WorkWithFiles::ReadFromFile() {
-
-	file_.exceptions(std::ios::badbit | std::ios::failbit);
-	file_.open(file_name_, std::ios::binary | std::ios::out | std::ios::in);
+	file_.open(file_name_, std::ios::binary | std::ios::out | std::ios::in | std::ios::app);
+	file_.exceptions(std::ios::badbit);
 
 	if (!file_.is_open()) {
-		throw std::exception("error.not open file.");
+		throw std::exception("Cannot open file!");
 	}
 
-	std::size_t sz{};
-	file_.read(reinterpret_cast<char*>(&sz), sizeof(std::size_t));
-	if (!file_.eof()) {
-		//tmp_vect_.resize(sz);
+	std::string line;
 
-		for (std::size_t i = 0; i < sz; ++i) {
-			// id_:
-			std::size_t tmp_id_{};
-			file_.read(reinterpret_cast<char*>(&tmp_id_), sizeof(std::size_t));
-
-			// name_:
-			auto tmp_name_ = ReadInfo(file_);
-
-			// type_food_:
-			auto tmp_tf_{ Animals::TypeFood::None };
-			file_.read(reinterpret_cast<char*>(&tmp_tf_), sizeof(Animals::TypeFood));
-
-			// amount_food_:
-			std::size_t tmp_amount_food_{};
-			file_.read(reinterpret_cast<char*>(&tmp_amount_food_), sizeof(std::size_t));
-
-			Animals* tmp{ nullptr };
-			switch (tmp_tf_) {
-			case Animals::TypeFood::Meat:
-				tmp = new Predators{ tmp_name_, tmp_amount_food_ };
-				break;
-			case Animals::TypeFood::Grass:
-				tmp = new Herbivorous{ tmp_name_, tmp_amount_food_ };
-				break;
-			case Animals::TypeFood::All:
-				tmp = new Omnivorous{ tmp_name_, tmp_amount_food_ };
-				break;
-			default:
-				break;
-			}
-			tmp->setID(tmp_id_);
-			//tmp_vect_[i] = tmp;
-			tmp_vect_.push_back(tmp);
-			//delete tmp;
-		}
+	while (std::getline(file_, line)) {
+		tmp_vect_.push_back(ParsingCSV_String(line));
 	}
+
 	file_.close();
 }
 
 void WorkWithFiles::WriteInFile() {
-
-	file_.exceptions(std::ios::badbit | std::ios::failbit);
+	file_.exceptions(std::ios::badbit);
 	file_.open(file_name_, std::ios::binary | std::ios::out | std::ios::in);
 
 	if (!file_.is_open()) {
-		throw std::exception("error.not open file.");
+		throw std::exception("Cannot open file !");
 	}
 
-	std::size_t sz = tmp_vect_.size();
-	file_.write(reinterpret_cast<char*>(&sz), sizeof(std::size_t));
-
-	for (const auto elem : tmp_vect_) {
-		// id_:
-		auto temp_id_ = elem->getID();
-		file_.write(reinterpret_cast<char*>(&temp_id_), sizeof(std::size_t));
-
-		// name_:
-		std::size_t size_ = elem->getNameAnimal().size();
-		file_.write(reinterpret_cast<char*>(&size_), sizeof(std::size_t));
-		file_.write(elem->getNameAnimal().data(), size_);
-
-		// type_food_:
-		auto tmp_tf = elem->getTypeFood();
-		file_.write(reinterpret_cast<char*>(&tmp_tf), sizeof(Animals::TypeFood));
-
-		// amount_food_:
-		auto tmp_ = elem->getAmountFood();
-		file_.write(reinterpret_cast<char*>(&tmp_), sizeof(std::size_t));
+	for (const Animals* animal : tmp_vect_) {
+		file_ << *animal << std::endl;
 	}
+
 	file_.close();
 }

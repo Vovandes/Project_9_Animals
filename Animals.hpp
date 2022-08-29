@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <string>
 #include <fstream>
+#include <sstream>
 
 class Animals {
 public:
@@ -16,8 +17,6 @@ public:
 		Grass,		// Трава
 		All,		// Всеядные
 	} type_food_;
-	//---------------------------------------------------------------------------------------------------------------
-
 	//---------------------------------------------------------------------------------------------------------------
 	Animals(std::size_t id = ReturnRandom());
 	Animals(const Animals& rhs);
@@ -39,13 +38,14 @@ private:
 	std::size_t amount_food_;
 	std::string name_;
 	static std::vector<std::size_t> vect_id_;
-
+	//---------------------------------------------------------------------------------------------------------------
 	static std::size_t ReturnRandom() {
 		std::size_t tmp = std::rand() % 1001;
 		return tmp;
 	}
 
-	friend std::ostream& operator << (std::ostream& uout, const Animals& rhs);
+	friend std::ostream& operator <<(std::ostream& uout, const Animals& rhs);
+	friend std::ostream& operator <<(std::ostream& uout, const Animals::TypeFood rhs);
 
 	friend std::istream& operator >> (std::istream& uin, Animals& rhs);
 };

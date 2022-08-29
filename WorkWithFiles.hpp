@@ -29,8 +29,9 @@ private:
 	std::fstream file_;
 	std::vector<Animals*> tmp_vect_;
 
-	std::string ReadInfo(std::fstream& file_);
+	Animals* ParsingCSV_String(const std::string& pars_str);
 
 	void ReadFromFile();
 	void WriteInFile();
+	bool is_empty(std::fstream& pfile_) { return pfile_.peek() == std::fstream::traits_type::eof(); }
 };
